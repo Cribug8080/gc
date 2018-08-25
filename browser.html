@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Document</title>
+        <style>
+            .swap {
+                height: 100vh;
+                width: 100vh;
+                background-color: #fff;
+                position: relative;
+            }
+            
+            .rol {
+                height: 50vh;
+                width: 50vh;
+                position: relative;
+                left: 25vh;
+                top: 25vh;
+                animation: circle 10s infinite;
+            }
+            
+            .one {
+                width: 20vh;
+                height: 20vh;
+                position: absolute;
+                border-radius: 50%;
+                background-color: green;
+            }
+            
+            .two {
+                width: 10vh;
+                height: 10vh;
+                border-radius: 50%;
+                bottom: 0;
+                right: 0;
+                position: absolute;
+                background-color: green;
+            }
+            
+            @keyframes circle {
+                0% {
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+        <h2><a href="360/lock2.html">自己的作品--锁</a></h2>
+        <div class='swap' name='qwe'>
+            <div class='rol'>
+                <div class="one"></div>
+                <div class="two"></div>
+            </div>
+        </div>
+        <button onclick="show()">窗口是否关闭</button><span id='winTar'></span>
+        <a href="test.html">跳转</a>
+        <div id="content"></div>
+    </body>
+    <script>
+        // var myWin = window.open('', '', 'width:200px,height:200px');
+        // myWin.document.write('this is wl de window');
+
+        // function show() {
+        //     document.getElementById('winTar').innerHTML = myWin.closed;
+        // }
+        console.log(document.all);
+        // console.log(document.domain);
+        console.log(document.referrer);
+        console.log(navigator);
+        document.getElementById('content').innerText =
+            "appCodeName:" + navigator.appCodeName + "\n" +
+            "appMinorVersion:" + navigator.appMinorVersion + "\n" +
+            "appName:" + navigator.appName + "\n" +
+            "browserLanguage:" + navigator.browserLanguage + "\n" +
+            "appCodeName:" + navigator.cpuClass + "\n" +
+            "platform:" + navigator.platform + "\n" +
+            "systemLanguage:" + navigator.systemLanguage + "\n" +
+            "userAgent:" + navigator.userAgent + "\n" +
+            "userLanguage:" + navigator.userLanguage + "\n";
+        console.log(navigator.appCodeName);
+        console.log();
+    </script>
+
+</html>

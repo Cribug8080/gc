@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0,maximum-scale=1.0, user-scalable=0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>手势锁</title>
+        <style>
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+            }
+            
+            div {
+                float: left;
+            }
+            
+            .lock-swap,
+            .but {
+                text-align: center;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="top"></div>
+        <div class="lock-swap">
+            <canvas id="lock"></canvas>
+        </div>
+        <div class="but">
+            <h4>设置密码</h4>
+            <h4>验证密码</h4>
+        </div>
+    </body>
+    <script>
+        var lock = document.getElementById('lock');
+        //适应屏幕大小  
+        var bodyH = document.body.offsetHeight;
+        var bodyW = document.body.offsetWidth;
+        var divs = document.getElementsByTagName('div');
+        if (bodyH < bodyW) { //让bodyH是大的，适应横屏
+            var temp = bodyH;
+            bodyH = bodyW;
+            bodyW = temp;
+            divs[0].style.height = '0px';
+            // lock.style.marginLeft = (bodyH - bodyW) / 2 + 'px';
+        } else {
+            divs[0].style.height = (bodyH - bodyW) / 2 + 'px';
+        }
+
+        divs[1].style.height = bodyW + 'px';
+        divs[1].style.width = bodyW + 'px';
+        lock.width = bodyW - 5; //不知道为何
+        lock.height = bodyW - 5;
+        // 按照%布局 需要保证r*6+outOff*2+inlOff*2 = bodyW
+        var r = 0.5 / 6 * bodyW;
+        var outOff = 0.3 / 2 * bodyW;
+        var inlOff = 0.2 / 2 * bodyW;
+        //获取绘图对象
+        var ctx = lock.getContext('2d');
+
+
+        // var circle = {}; //存放元素位置
+        // circle.one = [outOff + r, outOff + r];
+        // circle.two = [outOff + inlOff + 3 * r, outOff + r];
+        // circle.three = [outOff + 2 * inlOff + 5 * r, outOff + r];
+        // circle.four = [outOff + r, outOff + inlOff + 3 * r];
+        // circle.five = [outOff + inlOff + 3 * r, outOff + inlOff + 3 * r];
+        // circle.six = [outOff + 2 * inlOff + 5 * r, outOff + inlOff + 3 * r];
+        // circle.seven = [outOff + r, outOff + 2 * inlOff + 5 * r];
+        // circle.eight = [outOff + inlOff + 3 * r, outOff + 2 * inlOff + 5 * r];
+        // circle.nine = [outOff + 2 * inlOff + 5 * r, outOff + 2 * inlOff + 5 * r];
+        var circle = [];
+        for (var p = 0; p < 3; p++) {
+            for (var q = 0; q < 3; q++) {
+                var pp = new Point(outOff + q * inlOff + (1 + 2 * q) * r,
+                    outOff + p * inlOff + (1 + 2 * p) * r);
+                circle.push(pp);
+            }
+        }
+        console.log(circle);
+        drawCir(circle);
+        //捕捉鼠标按下事件
+        var startX;
+        var startY;
+        var line = [];
+        lock.addEventListener('touchstart', function(e) {
+            // 重置
+            line.splice(0);
+            startX = e.changedTouches[0].clientX;
+            startY = e.changedTouches[0].clientY;
+
+            //捕捉鼠标移动事件
+            lock.addEventListener('touchmove', function(e) {
+                // 取消浏览器默认事件，否则会出现左右滑动翻页
+                e.preventDefault();
+                var cx = e.changedTouches[0].clientX;
+                var cy = e.changedTouches[0].clientY;
+                //清楚画布
+                ctx.clearRect(0, 0, bodyW, bodyW);
+                drawCir(circle); //重新画圆
+                ctx.linWidth = '5';
+                ctx.strokeStyle = 'red';
+                //开始点
+                // ctx.beginPath();
+                // ctx.arc(startX, startY, r, 0, 2 * Math.PI);
+                // ctx.stroke();
+                drawLine(line);
+
+                var cc = closeCir(circle, [startX, startY]);
+                // if (addOnly(circle, cc)) cc = null;
+                if (cc != null) {
+                    ctx.beginPath();
+                    addOnly(line, new Point(cc.x, cc.y));
+                    ctx.moveTo(cc.x, cc.y);
+                    var inLine = closeCir(circle, [cx, cy]);
+                    if (inLine != null) {
+                        var poi = new Point(inLine.x, inLine.y);
+                        if (!addOnly(line, poi)) {
+                            startX = inLine.x;
+                            startY = inLine.y;
+                        }
+                    }
+                    ctx.lineTo(cx, cy);
+                    ctx.stroke();
+                }
+            });
+        });
+
+        //捕捉鼠标抬起事件
+        lock.addEventListener('touchend', function(e) {
+            ctx.clearRect(0, 0, bodyW, bodyW);
+            drawCir(circle); //重新画圆
+            ctx.linWidth = '5';
+            ctx.strokeStyle = 'red';
+            drawLine(line);
+        });
+
+        function drawCir(circle) {
+            // 画圆
+            ctx.strokeStyle = '#0000FF'; //圆的颜色
+            //画出每个
+            for (var key in circle) {
+                if (circle.hasOwnProperty(key)) {
+                    var element = circle[key];
+                    ctx.beginPath();
+                    ctx.arc(element.x, element.y, r, 0, 2 * Math.PI);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function drawLine(line) {
+            if (line.length > 1) {
+                for (var i = 1; i < line.length; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(line[i - 1].x, line[i - 1].y);
+                    ctx.lineTo(line[i].x, line[i].y);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function closeCir(cir, point) {
+            if (point == undefined || cir == undefined) return null;
+            for (var key in cir) {
+                if (cir.hasOwnProperty(key)) {
+                    var element = cir[key];
+                    var dis = (element.x - point[0]) * (element.x - point[0]) +
+                        (element.y - point[1]) * (element.y - point[1]); //点点距离
+                    dis = Math.pow(Math.abs(dis), 0.5);
+                    if (dis < r) {
+                        var pp = new Point(element.x, element.y);
+                        return pp;
+                    }
+                }
+            }
+            return null;
+        };
+
+        function Point(x, y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        function addOnly(array, ele) {
+            for (var key in array) {
+                if (array.hasOwnProperty(key)) {
+                    var element = array[key];
+                    if (element.x == ele.x && element.y == ele.y) return true;
+                }
+            }
+            array.push(ele);
+            return false;
+        }
+    </script>
+
+</html>

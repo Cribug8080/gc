@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0,maximum-scale=1.0, user-scalable=0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>手势锁</title>
+        <script src="../js/common.js"></script>
+        <script>
+            if (isPC()) {
+                document.write('该页面只适合于移动端');
+            }
+        </script>
+        <style>
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+            }
+            
+            .top {
+                width: 100%;
+            }
+            
+            div {
+                float: left;
+            }
+            
+            .lock-swap,
+            .but {
+                text-align: center;
+            }
+            
+            .msg {
+                width: 100%;
+                height: 44px;
+                text-align: center;
+                font-size: 24px;
+                line-height: 24px;
+                padding-bottom: 20px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="top"></div>
+        <div class="lock-swap">
+            <canvas id="lock"></canvas>
+        </div>
+        <div class="but">
+            <div class="msg" id="tips">请输入手势密码</div>
+            <h4 class="input-radio">
+                <label for="setPassword">
+                    <input type="radio" name="pasword" id="setPassword" value="" checked  onclick="clickSet()">
+                    <span>设置密码</span>
+                </label>
+            </h4>
+            <h4>
+                <label for="getPassword">
+                    <input type="radio" name="pasword" id="getPassword"  onclick="clickGet()">
+                    <span>验证密码</span>
+                </label>
+            </h4>
+        </div>
+    </body>
+    <script>
+        var lock = document.getElementById('lock');
+        //适应屏幕大小  
+        var bodyH = document.body.offsetHeight;
+        var bodyW = document.body.offsetWidth;
+        var divs = document.getElementsByTagName('div');
+        if (bodyH < bodyW) { //让bodyH是大的，适应横屏
+            var temp = bodyH;
+            bodyH = bodyW;
+            bodyW = temp;
+            divs[0].style.height = '0px';
+            divs[2].style.width = (bodyH - bodyW) + 'px';
+            divs[2].style.paddingTop = (bodyH - bodyW) / 4 + 'px';
+        } else {
+            divs[0].style.height = (bodyH - bodyW) / 4 + 'px';
+            divs[2].style.width = bodyW + 'px';
+        }
+        divs[1].style.height = bodyW + 'px';
+        divs[1].style.width = bodyW + 'px';
+        lock.width = bodyW - 5; //不知道为何
+        lock.height = bodyW - 5;
+
+        // 给设置密码添加点击事件
+        function clickSet() {
+            ctx.clearRect(0, 0, bodyW, bodyW); //清楚画布
+            drawCir(circle); //重新画圆
+            document.getElementById('tips').innerHTML = '请输入手势密码';
+            document.getElementById('setPassword').setAttribute('value', '');
+        }
+
+        function clickGet() {
+            document.getElementById('tips').innerHTML = '请输入手势密码';
+            ctx.clearRect(0, 0, bodyW, bodyW); //清楚画布
+            drawCir(circle); //重新画圆
+        }
+        // 按照%布局 需要保证r*6+outOff*2+inlOff*2 = bodyW
+        var r = 0.5 / 6 * bodyW;
+        var outOff = 0.3 / 2 * bodyW;
+        var inlOff = 0.2 / 2 * bodyW;
+        //获取绘图对象
+        var ctx = lock.getContext('2d');
+        // 圆心坐标
+        var circle = [];
+        for (var p = 0; p < 3; p++) {
+            for (var q = 0; q < 3; q++) {
+                var pp = new Point(p, q);
+                circle.push(pp);
+            }
+        }
+        // 画圆
+        drawCir(circle);
+        //捕捉鼠标按下事件
+        var startX;
+        var startY;
+        var line = [];
+        lock.addEventListener('touchstart', function(e) {
+
+            // 重置
+            line.splice(0);
+            //清楚画布
+            ctx.clearRect(0, 0, bodyW, bodyW);
+            drawCir(circle); //重新画圆
+            drawLine(line); //将已经选择的点连接
+            offsetTop = e.currentTarget.offsetTop;
+            offsetLeft = e.currentTarget.offsetLeft;
+            startX = e.changedTouches[0].pageX - offsetLeft;
+            startY = e.changedTouches[0].pageY - offsetTop;
+
+            //捕捉鼠标移动事件
+            lock.addEventListener('touchmove', function(e) {
+                // 取消浏览器默认事件，否则会出现左右滑动翻页
+                e.preventDefault();
+                //鼠标的坐标
+                var cx = e.changedTouches[0].pageX - offsetLeft;
+                var cy = e.changedTouches[0].pageY - offsetTop;
+                //清楚画布
+                ctx.clearRect(0, 0, bodyW, bodyW);
+                drawCir(circle); //重新画圆
+                drawLine(line); //将已经选择的点连接
+                // 起始点判断
+                var cc = closeCir(circle, [startX, startY]);
+                if (cc != null) {
+                    ctx.beginPath();
+                    addOnly(line, new Point(cc.p, cc.q));
+                    ctx.moveTo(cc.x, cc.y);
+                    // 如果经过圆， 就将其添加到line里面
+                    var inLine = closeCir(circle, [cx, cy]);
+                    if (inLine != null) {
+                        var poi = new Point(inLine.p, inLine.q);
+                        //判断是否经过其他点
+                        var lineLast = line[line.length - 1];
+                        var middlep = (poi.p + lineLast.p + 2) % 2;
+                        var middleq = (poi.q + lineLast.q + 2) % 2;
+                        if (middlep == 0 && middleq == 0 && (poi.p != lineLast.p || poi.q != lineLast.q)) {
+                            addOnly(line, new Point((poi.p + lineLast.p) / 2, (poi.q + lineLast.q) / 2));
+                        }
+                        //添加鼠标临近的点,判断是否需要重置起始点
+                        if (addOnly(line, poi)) {
+                            startX = inLine.x;
+                            startY = inLine.y;
+                        }
+                    }
+                    ctx.lineTo(cx, cy);
+                    ctx.stroke();
+                }
+            });
+        });
+
+        //捕捉鼠标抬起事件
+        lock.addEventListener('touchend', function(e) {
+            window.setTimeout(function() {
+                ctx.clearRect(0, 0, bodyW, bodyW);
+                drawCir(circle); //重新画圆
+            }, 300);
+            // drawLine(line);
+            //判断输入正确性
+            var setPass = document.getElementById('setPassword');
+            var password = ''; //用字符串表示密码
+            for (var i = 0; i < line.length; i++) {
+                password += (1 + 3 * line[i].p) + line[i].q;
+            }
+            var value = setPass.getAttribute('value');
+            var tipsText = document.getElementById('tips').innerHTML;
+            if (setPass.checked) { //设置密码
+                if (value == '') { //设置密码-第一次输入
+                    if (password.length == 0) { //设置密码-第一次输入-判断密码是否空
+                        tipsText = '请输入手势密码';
+                    } else if (password.length < 5) { //设置密码-第一次输入-判断密码长度
+                        tipsText = '密码太短，至少需要5个点';
+                    } else { //设置密码-第一次输入-长度正确
+                        setPass.setAttribute('value', password);
+                        tipsText = '请再次输入密码';
+                    }
+                } else { //设置密码-第二次输入
+                    if (value == password) { //设置密码-第二次输入-正确
+                        localStorage.password = password;
+                        setPass.setAttribute('value', ''); //设置密码成功，清空value
+                        document.getElementById('getPassword').checked = true;
+                        tipsText = '密码设置成功';
+                    } else if (password == '') { //设置密码-第二次输入-为空
+                        tipsText = '请再次输入密码';
+                    } else { //设置密码-第二次输入-错误
+                        setPass.setAttribute('value', '');
+                        tipsText = '两次输入的不一致'; //设置密码失败，清空value
+                    }
+                }
+            } else { //验证密码
+                setPass.setAttribute('value', '');
+                if (password == '') { //验证密码-为空
+                    tipsText = '请输入手势密码';
+                } else if (password == localStorage.password) { //验证密码-正确
+                    tipsText = '密码正确';
+                } else { //验证密码-错误
+                    tipsText = '输入的密码不正确';
+                }
+            }
+            document.getElementById('tips').innerHTML = tipsText;
+        });
+        // 画出circle数组里面所有的圆
+        function drawCir(circle) {
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#0000FF'; //圆的颜色
+            //画出每个
+            for (var key in circle) {
+                if (circle.hasOwnProperty(key)) {
+                    var element = circle[key];
+                    ctx.beginPath();
+                    ctx.arc(element.x, element.y, r, 0, 2 * Math.PI);
+                    ctx.stroke();
+                }
+            }
+        }
+        // 画出已经选择的点之间的线
+        function drawLine(line) {
+            ctx.lineWidth = r / 4;
+            ctx.strokeStyle = 'red';
+            if (line.length >= 1) {
+                //画第一个圆
+                ctx.beginPath();
+                ctx.fillStyle = 'red';
+                ctx.arc(line[0].x, line[0].y, r / 3, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            if (line.length > 1) {
+                for (var i = 1; i < line.length; i++) {
+                    //画线
+                    ctx.beginPath();
+                    ctx.moveTo(line[i - 1].x, line[i - 1].y);
+                    ctx.lineTo(line[i].x, line[i].y);
+                    ctx.stroke();
+                    //画圆
+                    ctx.beginPath();
+                    ctx.fillStyle = 'red';
+                    ctx.arc(line[i].x, line[i].y, r / 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+        }
+        // 判断点point是否临近cir中的某个，返回临近点的坐标
+        function closeCir(cir, point) {
+            if (point == undefined || cir == undefined) return null;
+            for (var key in cir) {
+                if (cir.hasOwnProperty(key)) {
+                    var element = cir[key];
+                    var dis = (element.x - point[0]) * (element.x - point[0]) +
+                        (element.y - point[1]) * (element.y - point[1]); //点点距离
+                    dis = Math.pow(Math.abs(dis), 0.5);
+                    if (dis < r) {
+                        var pp = new Point(element.p, element.q);
+                        return pp;
+                    }
+                }
+            }
+            return null;
+        };
+        // 定义坐标变量
+        // --p, q表示横向第p个， 纵向第q个
+        // --x, y表示这个点， 横向像素为x， 纵向像素为y
+        function Point(p, q) {
+            this.x = outOff + q * inlOff + (1 + 2 * q) * r;
+            this.y = outOff + p * inlOff + (1 + 2 * p) * r;
+            this.p = p;
+            this.q = q;
+        }
+        // 在array中添加ele。如果array里面有ele，返回false，否则返回true
+        function addOnly(array, ele) {
+            for (var key in array) {
+                if (array.hasOwnProperty(key)) {
+                    var element = array[key];
+                    if (element.x == ele.x && element.y == ele.y) return false;
+                }
+            }
+            array.push(ele);
+            return true;
+        }
+        //判断两点之间的直线是否经过第三个点,如果是返回true,佛否则返回false
+        function linePassPoint(point1, point2, point3) {
+            //是否在线上
+            var tf = ((point1[0] - point2[0]) / (point1[1] - point2[1])) == ((point1[0] - point3[0]) / (point1[1] - point3[1]));
+            //是否在线内
+            var cen = (point1[0] > point2[0] && point2[0] > point3[0]) || (point1[0] < point2[0] && point2[0] < point3[0]);
+            if (tf && cen) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    </script>
+
+    <script src="../js/common.js"></script>
+    <script>
+        window.onload = function() {
+            if (isPC()) {
+                document.write('该页面只适合于移动端');
+            }
+        };
+    </script>
+
+</html>

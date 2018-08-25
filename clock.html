@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="test.js"></script>
+</head>
+
+<body>
+    <h1>哈哈1</h1>
+    <div id='page'></div>
+    <a href="test.2.html">跳转</a>
+
+    <style>
+        #rot {
+            height: 210px;
+            width: 210px;
+            border-radius: 100px;
+            background-color: #8BC34A;
+            position: relative;
+            --hour: 0;
+            --min: 0;
+            --sec: 0;
+        }
+        
+        .num {
+            width: 30px;
+            height: 210px;
+            position: absolute;
+            top: 0px;
+            left: 90px;
+        }
+        
+        .num span {
+            display: block;
+            position: absolute;
+            height: 30px;
+            width: 30px;
+            font-size: 15px;
+            line-height: 30px;
+            text-align: center;
+        }
+        
+        #cir {
+            position: absolute;
+            background-color: wheat;
+            border-radius: 15px;
+            margin: 90px 90px;
+            height: 30px;
+            width: 30px;
+        }
+        
+        #sec {
+            position: absolute;
+            left: 103px;
+            top: 0px;
+            width: 4px;
+            height: 210px;
+            animation: run 60s linear infinite;
+        }
+        
+        #sec div {
+            border-radius: 2px;
+            background-color: red;
+            margin: 30px 0px 120px 0px;
+            width: 100%;
+            height: 60px;
+        }
+        
+        @keyframes run {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+    <div id="rot">
+        <div id="cir"></div>
+        <div id="sec">
+            <div></div>
+        </div>
+        <div id="min">
+            <div></div>
+        </div>
+    </div>
+    <script>
+        var rot = document.getElementById('rot');
+        for (let i = 0; i < 6; i++) {
+            var div = document.createElement('DIV');
+            // 添加上侧数字
+            var sp = document.createElement('SPAN');
+            var a = (i + 12) % 12
+            if (a == 0) a = 12;
+            sp.innerText = a;
+            sp.style.top = 0;
+            sp.style.transform = 'rotate(-' + i * 30 + 'deg)';
+            div.appendChild(sp);
+            // 添加下侧数字
+            var sp2 = document.createElement('SPAN');
+            sp2.innerText = (i + 12 + 6) % 12;;
+            sp2.style.bottom = 0;
+            sp2.style.transform = 'rotate(-' + i * 30 + 'deg)';
+            div.appendChild(sp2);
+
+            // div.style.backgroundColor = 'yellow';
+            div.style.transform = 'rotate(' + i * 30 + 'deg)';
+            div.setAttribute('class', 'num');
+            rot.appendChild(div);
+        }
+    </script>
+</body>
+
+</html>
